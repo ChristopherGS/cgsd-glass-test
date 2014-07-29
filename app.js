@@ -12,7 +12,7 @@ var config = require('./config.json');
 // Use environment variables to configure oauth client.
 // That way, you never need to ship these values, or worry
 // about accidentally committing them
-var oauth2Client = new OAuth2(config.CLIENT_ID,config.CLIENT_SECRET, config.REDIRECT_URL);
+var oauth2Client = new OAuth2(config.CLIENT_ID, config.CLIENT_SECRET, config.REDIRECT_URL);
 
 var app = express();
 
@@ -35,13 +35,17 @@ var failure = function (data) {
     console.log('failure', data);
 };
 var gotToken = function () {
-    googleapis
+	console.log('running gotToken');
+
+	var mirror = google.mirror('v1');
+    /*googleapis
         .discover('mirror', 'v1')
         .execute(function (err, client) {
             if (!!err) {
                 failure();
                 return;
-            }
+            }*/
+			
             console.log('mirror client', client);
             listTimeline(client, failure, success);
             insertHello(client, failure, success);
@@ -139,6 +143,8 @@ var listTimeline = function (client, errorCallback, successCallback) {
                 successCallback(data);
         });
 };
+
+/*
 var grabToken = function (code, errorCallback, successCallback) {
     oauth2Client.getToken(code, function (err, tokens) {
         if (!!err) {
@@ -149,9 +155,10 @@ var grabToken = function (code, errorCallback, successCallback) {
             successCallback();
         }
     });
-};
+};*/
 
 app.get('/', function (req, res) {
+console.log('now at home');
     if (!oauth2Client.credentials) {
         // generates a url that allows offline access and asks permissions
         // for Mirror API scope.
@@ -169,9 +176,23 @@ app.get('/', function (req, res) {
 });
 app.get('/oauth2callback', function (req, res) {
     // if we're able to grab the token, redirect the user back to the main page
-    grabToken(req.query.code, failure, function () {
-        res.redirect('/');
-    });
+	console.log('now at oauth2callback');
+	console.log(req.query.code);
+	var code = req.query.code;
+	console.log(code);
+	
+	
+	oauth2Client.getToken(code, function(err, tokens) {
+		console.log(tokens);
+		if(!err) {
+			oauth2Client.setCredentials(tokens);
+			res.redirect('/');
+		} else {
+			console.log(err);
+			console.log('some big ass error');
+		}
+	});
+	
 });
 app.post('/reply', function(req, res){
     console.log('replied',req);
